@@ -1,0 +1,65 @@
+# Venus Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: venus
+  labels:
+    app: venus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: venus
+  template:
+    metadata:
+      labels:
+        app: venus
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+      initContainers:
+      - name: setup
+        image: busybox
+        command: ['sh', '-c', 'echo "venus" > /html/index.html']
+        volumeMounts:
+        - name: html
+          mountPath: /html
+      volumes:
+      - name: html
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: venus
+spec:
+  selector:
+    app: venus
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: venus
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: venus.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: venus
+            port:
+              number: 80

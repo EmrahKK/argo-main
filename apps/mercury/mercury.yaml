@@ -1,0 +1,65 @@
+# Mercury Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mercury
+  labels:
+    app: mercury
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mercury
+  template:
+    metadata:
+      labels:
+        app: mercury
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+      initContainers:
+      - name: setup
+        image: busybox
+        command: ['sh', '-c', 'echo "mercury" > /html/index.html']
+        volumeMounts:
+        - name: html
+          mountPath: /html
+      volumes:
+      - name: html
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mercury
+spec:
+  selector:
+    app: mercury
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mercury
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: mercury.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mercury
+            port:
+              number: 80

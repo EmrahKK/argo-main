@@ -1,0 +1,66 @@
+---
+# Jupiter Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupiter
+  labels:
+    app: jupiter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupiter
+  template:
+    metadata:
+      labels:
+        app: jupiter
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+      initContainers:
+      - name: setup
+        image: busybox
+        command: ['sh', '-c', 'echo "jupiter" > /html/index.html']
+        volumeMounts:
+        - name: html
+          mountPath: /html
+      volumes:
+      - name: html
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupiter
+spec:
+  selector:
+    app: jupiter
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jupiter
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: jupiter.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jupiter
+            port:
+              number: 80
