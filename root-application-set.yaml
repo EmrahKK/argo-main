@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-apps
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/EmrahKK/argo-main.git
+      revision: HEAD
+      directories:
+      - path: apps/* # This tells Argo to look at every subfolder in /apps
+  template:
+    metadata:
+      name: '{{path.basename}}' # This names the app after the folder (e.g., app-001)
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/EmrahKK/argo-main.git
+        targetRevision: HEAD
+        path: '{{path}}' # This points to the specific app folder
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}' # Automatically deploys to a namespace with the app's name
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true # Automatically creates the namespace if it doesn't exist  

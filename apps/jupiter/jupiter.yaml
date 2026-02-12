@@ -54,7 +54,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-  - host: jupiter.local
+  - host: jupiter.lima.local
     http:
       paths:
       - path: /
